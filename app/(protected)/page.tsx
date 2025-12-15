@@ -45,7 +45,7 @@ export default function PlanPage() {
           onClick={() => setResults(null)}
           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
         >
-          ← Back to Planning
+          ← Back to planning
         </button>
 
         <ResultsContainer
@@ -63,10 +63,10 @@ export default function PlanPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <TripPlannerForm onPlanTrip={handlePlanTrip} />
-      </div>
+    <div>
+      <TripPlannerForm onPlanTrip={handlePlanTrip} />
     </div>
   );
 }
+
+

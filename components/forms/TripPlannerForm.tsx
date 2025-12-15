@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import type { PlanTripResponse } from "@/lib/types";
 
 interface TripFormState {
@@ -163,21 +168,40 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
 
         {/* Start Date */}
         <div>
-          <label htmlFor="startDate" className="block text-sm font-medium mb-2">
-            Start Date
+          <label className="block text-sm font-medium mb-2">
+            Start date
           </label>
-          <Input
-            id="startDate"
-            type="date"
-            value={state.startDate}
-            onChange={(e) =>
-              setState((prev) => ({
-                ...prev,
-                startDate: e.target.value,
-              }))
-            }
-            disabled={state.loading}
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-between font-normal",
+                  !state.startDate && "text-muted-foreground",
+                )}
+                disabled={state.loading}
+              >
+                <span>
+                  {state.startDate
+                    ? format(new Date(state.startDate), "PPP")
+                    : "Select start date"}
+                </span>
+                <CalendarIcon className="h-4 w-4 opacity-70" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={state.startDate ? new Date(state.startDate) : undefined}
+                onSelect={(date) => {
+                  setState((prev) => ({
+                    ...prev,
+                    startDate: date ? format(date, "yyyy-MM-dd") : "",
+                  }));
+                }}
+              />
+            </PopoverContent>
+          </Popover>
           {state.errors.startDate && (
             <p className="text-red-500 text-sm mt-1">{state.errors.startDate}</p>
           )}
@@ -185,21 +209,40 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
 
         {/* End Date */}
         <div>
-          <label htmlFor="endDate" className="block text-sm font-medium mb-2">
-            End Date
+          <label className="block text-sm font-medium mb-2">
+            End date
           </label>
-          <Input
-            id="endDate"
-            type="date"
-            value={state.endDate}
-            onChange={(e) =>
-              setState((prev) => ({
-                ...prev,
-                endDate: e.target.value,
-              }))
-            }
-            disabled={state.loading}
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-between font-normal",
+                  !state.endDate && "text-muted-foreground",
+                )}
+                disabled={state.loading}
+              >
+                <span>
+                  {state.endDate
+                    ? format(new Date(state.endDate), "PPP")
+                    : "Select end date"}
+                </span>
+                <CalendarIcon className="h-4 w-4 opacity-70" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={state.endDate ? new Date(state.endDate) : undefined}
+                onSelect={(date) => {
+                  setState((prev) => ({
+                    ...prev,
+                    endDate: date ? format(date, "yyyy-MM-dd") : "",
+                  }));
+                }}
+              />
+            </PopoverContent>
+          </Popover>
           {state.errors.endDate && (
             <p className="text-red-500 text-sm mt-1">{state.errors.endDate}</p>
           )}

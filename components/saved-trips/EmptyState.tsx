@@ -18,7 +18,7 @@ export function EmptyState() {
         Start planning your next adventure by creating a new trip.
       </p>
 
-      <Button onClick={() => (window.location.href = "/protected/plan")} size="lg">
+      <Button onClick={() => (window.location.href = "/")} size="lg">
         Plan Your First Trip
       </Button>
     </Card>

@@ -63,7 +63,7 @@ export function ResultsContainer(props: ResultsContainerProps) {
 
       setSaved(true);
       setTimeout(() => {
-        window.location.href = "/protected/saved-trips";
+        window.location.href = "/saved-trips";
       }, 2000);
     } catch (error) {
       setSaveError(
