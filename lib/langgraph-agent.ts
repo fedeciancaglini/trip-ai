@@ -12,12 +12,14 @@ import { discoverInterestPoints } from "./nodes/interest-points";
 import { planRoutes } from "./nodes/route-planning";
 import { calculateRoutes } from "./nodes/calculate-routes";
 import { searchAccommodation } from "./nodes/accommodation";
+import { calculateCarRouteNode } from "./nodes/car-route";
 
 // Trip planner node names
 const TripPlannerNodeNames = {
   validateInput: "validate_input",
   geocodeLocations: "geocode_locations",
   determineTransportationMode: "determine_transportation_mode",
+  calculateCarRoute: "calculate_car_route",
   discoverPois: "discover_pois",
   planRoutes: "plan_routes",
   calculateRoutes: "calculate_routes",
@@ -38,6 +40,19 @@ function routeAfterGeocoding(state: TripPlannerState): string {
 }
 
 /**
+ * Routing function to determine next step after transportation mode determination
+ * Returns the next node based on transportation mode
+ */
+function routeAfterTransportationMode(state: TripPlannerState): string {
+  // If transportation mode is car, calculate the car route
+  if (state.transportationMode === "car") {
+    return TripPlannerNodeNames.calculateCarRoute;
+  }
+  // Otherwise, skip to END
+  return END;
+}
+
+/**
  * Create and compile the trip planner graph
  * This is done once at startup and reused for multiple invocations
  */
@@ -49,6 +64,10 @@ function createTripPlannerGraph() {
     .addNode(
       TripPlannerNodeNames.determineTransportationMode,
       determineTransportationMode
+    )
+    .addNode(
+      TripPlannerNodeNames.calculateCarRoute,
+      calculateCarRouteNode
     )
     .addNode(TripPlannerNodeNames.discoverPois, discoverInterestPoints)
     .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
@@ -79,8 +98,18 @@ function createTripPlannerGraph() {
         [END]: END,
       }
     )
-    // After transportation mode determination, continue to END
-    .addEdge(TripPlannerNodeNames.determineTransportationMode, END)
+    // Conditional edge from determineTransportationMode: calculate car route if mode is car
+    .addConditionalEdges(
+      TripPlannerNodeNames.determineTransportationMode,
+      routeAfterTransportationMode,
+      {
+        [TripPlannerNodeNames.calculateCarRoute]:
+          TripPlannerNodeNames.calculateCarRoute,
+        [END]: END,
+      }
+    )
+    // After car route calculation, continue to END
+    .addEdge(TripPlannerNodeNames.calculateCarRoute, END)
     // After discovering POIs, plan the routes
     .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
     // After route planning, calculate actual routes with polylines

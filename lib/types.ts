@@ -24,6 +24,19 @@ export interface RouteSegment {
   duration: string;
 }
 
+export interface RouteStep {
+  instructions: string;
+  distance: {
+    text: string;
+    value: number; // in meters
+  };
+  duration: {
+    text: string;
+    value: number; // in seconds
+  };
+  travel_mode: string;
+}
+
 export interface DaySchedule {
   day: number;
   date: string;
@@ -48,6 +61,7 @@ export interface RouteData {
   routes: {
     day: number;
     legs: RouteSegment[];
+    steps?: RouteStep[]; // Optional steps for detailed route rendering
   }[];
 }
 

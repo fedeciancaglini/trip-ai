@@ -8,7 +8,7 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import type { DaySchedule, POI, RouteData } from "../types";
+import type { DaySchedule, POI, RouteData, RouteStep } from "../types";
 import { GoogleMapsError } from "../types";
 
 let googleMapsClient: Client | null = null;
@@ -263,7 +263,24 @@ export async function geocodeAddress(
 }
 
 /**
- * Get route information between two points using MCP
+ * Calculate car route from origin to destination
+ * Public function for calculating driving route between two locations
+ */
+export async function calculateCarRoute(
+  origin: { lat: number; lng: number },
+  destination: { lat: number; lng: number }
+): Promise<{
+  distance: string;
+  distanceValue: number;
+  duration: string;
+  durationValue: number;
+  steps: RouteStep[];
+}> {
+  return getRoute(origin, destination);
+}
+
+/**
+ * Get route information between two points using MCP maps_directions tool
  */
 async function getRoute(
   origin: { lat: number; lng: number },
@@ -273,122 +290,85 @@ async function getRoute(
   distanceValue: number;
   duration: string;
   durationValue: number;
+  steps: RouteStep[];
 }> {
   try {
     const client = await initializeGoogleMapsClient();
 
-    // Try common MCP tool names for route computation
-    // The tool name may vary, so we'll try a few common patterns
-    let result;
-    try {
-      // Try compute_route first (most common)
-      result = await client.callTool({
-        name: "compute_route",
-        arguments: {
-          origin: {
-            latitude: origin.lat,
-            longitude: origin.lng,
-          },
-          destination: {
-            latitude: destination.lat,
-            longitude: destination.lng,
-          },
-          travelMode: "DRIVE",
-          routingPreference: "TRAFFIC_AWARE",
-        },
-      });
-    } catch {
-      // Fallback to get_directions
-      try {
-        result = await client.callTool({
-          name: "get_directions",
-          arguments: {
-            origin: `${origin.lat},${origin.lng}`,
-            destination: `${destination.lat},${destination.lng}`,
-            mode: "driving",
-          },
-        });
-      } catch {
-        // Last fallback to maps_directions
-        result = await client.callTool({
-          name: "maps_directions",
-          arguments: {
-            origin: `${origin.lat},${origin.lng}`,
-            destination: `${destination.lat},${destination.lng}`,
-            mode: "driving",
-          },
-        });
-      }
-    }
+    // Use maps_directions tool
+    const result = await client.callTool({
+      name: "maps_directions",
+      arguments: {
+        origin: `${origin.lat},${origin.lng}`,
+        destination: `${destination.lat},${destination.lng}`,
+        mode: "driving",
+      },
+    });
 
     if (!result.content || !Array.isArray(result.content)) {
       throw new Error("Invalid response from Google Maps MCP: no content");
     }
 
-    // Parse the response
+    // Parse the response - maps_directions returns array format
+    // [{ summary, distance: { text, value }, duration: { text, value }, steps: [...] }]
     for (const content of result.content) {
       if (content.type !== "text") continue;
 
       try {
         const parsed = JSON.parse(content.text);
+        const routes = parsed.routes;
 
-        // Handle different response formats
-        let distanceValue: number;
-        let durationValue: number;
+        if (!Array.isArray(routes) || routes.length === 0) {
+          throw new Error("Invalid maps_directions response format: expected array");
+        }
 
-        // Format 1: Direct route response with distanceMeters and duration
-        if (
-          parsed.distanceMeters !== undefined &&
-          parsed.duration !== undefined
-        ) {
-          distanceValue = parsed.distanceMeters;
-          durationValue =
-            typeof parsed.duration === "string"
-              ? parseDuration(parsed.duration)
-              : parsed.duration;
+        const route = routes[0];
+        
+        if (!route.distance || typeof route.distance.value !== "number") {
+          throw new Error("Invalid distance in maps_directions response");
         }
-        // Format 2: Routes array format
-        else if (
-          parsed.routes &&
-          Array.isArray(parsed.routes) &&
-          parsed.routes.length > 0
-        ) {
-          const route = parsed.routes[0];
-          distanceValue = route.distanceMeters || route.distance?.value || 5000;
-          durationValue =
-            typeof route.duration === "string"
-              ? parseDuration(route.duration)
-              : route.duration || route.duration?.value || 3600;
+        
+        if (!route.duration || typeof route.duration.value !== "number") {
+          throw new Error("Invalid duration in maps_directions response");
         }
-        // Format 3: Legs format (directions API)
-        else if (parsed.routes?.[0]?.legs?.[0]) {
-          const leg = parsed.routes[0].legs[0];
-          distanceValue = leg.distance?.value || 5000;
-          durationValue = leg.duration?.value || 3600;
-        }
-        // Format 4: Simple distance/duration fields
-        else {
-          distanceValue = parsed.distance || parsed.distanceValue || 5000;
-          durationValue =
-            typeof parsed.duration === "string"
-              ? parseDuration(parsed.duration)
-              : parsed.duration || parsed.durationValue || 3600;
-        }
+
+        const distanceValue = route.distance.value; // in meters
+        const durationValue = route.duration.value; // in seconds
+
+        // Extract steps if available
+        const steps: RouteStep[] = route.steps && Array.isArray(route.steps)
+          ? route.steps.map((step: any) => ({
+              instructions: step.instructions || "",
+              distance: {
+                text: step.distance?.text || "",
+                value: step.distance?.value || 0,
+              },
+              duration: {
+                text: step.duration?.text || "",
+                value: step.duration?.value || 0,
+              },
+              travel_mode: step.travel_mode || "DRIVING",
+            }))
+          : [];
 
         return {
-          distance: `${(distanceValue / 1000).toFixed(1)} km`,
+          distance: route.distance.text || `${(distanceValue / 1000).toFixed(1)} km`,
           distanceValue,
-          duration: formatDuration(durationValue),
+          duration: route.duration.text || formatDuration(durationValue),
           durationValue,
+          steps,
         };
       } catch (parseError) {
-        // If not JSON, try to extract from text
+        if (parseError instanceof Error && parseError.message.includes("Invalid")) {
+          throw parseError;
+        }
+        // If not JSON or parsing failed, log and continue
         console.error("Failed to parse Google Maps MCP response:", parseError);
         continue;
       }
     }
 
-    throw new Error("Could not parse route data from MCP response");
+    throw new Error("Could not parse route data from maps_directions response");
   } catch (error) {
     if (error instanceof GoogleMapsError) {
       throw error;
