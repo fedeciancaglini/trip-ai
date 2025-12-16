@@ -128,6 +128,7 @@ export function ResultsContainer(props: ResultsContainerProps) {
             <InteractiveMap
               pois={props.pointsOfInterest}
               destination={props.destination}
+              airbnbListings={props.airbnbRecommendations}
             />
           </Card>
         </TabsContent>

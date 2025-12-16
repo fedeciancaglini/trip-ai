@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Card } from "@/components/ui/card";
-import type { POI } from "@/lib/types";
+import type { POI, AirbnbListing } from "@/lib/types";
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
@@ -16,9 +16,10 @@ const LeafletMap = dynamic(() => import("./LeafletMap"), {
 interface InteractiveMapProps {
   pois: POI[];
   destination: string;
+  airbnbListings?: AirbnbListing[];
 }
 
-export function InteractiveMap({ pois }: InteractiveMapProps) {
+export function InteractiveMap({ pois, airbnbListings }: InteractiveMapProps) {
   if (!pois || pois.length === 0) {
     return (
       <Card className="w-full h-96 bg-gray-100 flex items-center justify-center">
@@ -32,7 +33,7 @@ export function InteractiveMap({ pois }: InteractiveMapProps) {
       <h2 className="text-2xl font-bold">Route Map</h2>
 
       <Card className="overflow-hidden">
-        <LeafletMap pois={pois} />
+        <LeafletMap pois={pois} airbnbListings={airbnbListings} />
       </Card>
 
       {/* POI legend */}

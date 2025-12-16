@@ -2,14 +2,15 @@
 
 import { useMemo, useEffect, useState } from "react";
 import { Icon } from "leaflet";
-import type { POI } from "@/lib/types";
+import type { POI, AirbnbListing } from "@/lib/types";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 
 interface LeafletMapProps {
   pois: POI[];
+  airbnbListings?: AirbnbListing[];
 }
 
-export default function LeafletMap({ pois }: LeafletMapProps) {
+export default function LeafletMap({ pois, airbnbListings = [] }: LeafletMapProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -18,7 +19,7 @@ export default function LeafletMap({ pois }: LeafletMapProps) {
 
   const center: [number, number] = [pois[0].lat, pois[0].lng];
 
-  const defaultIcon = useMemo(
+  const poiIcon = useMemo(
     () =>
       new Icon({
         iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -26,6 +27,19 @@ export default function LeafletMap({ pois }: LeafletMapProps) {
         iconSize: [25, 41],
         iconAnchor: [12, 41],
         popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+      }),
+    [],
+  );
+
+  const airbnbIcon = useMemo(
+    () =>
+      new Icon({
+        iconUrl: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjZWY0NDQ0Ij48cG9seWdvbiBwb2ludHM9IjUwLDEwIDkwLDQwIDkwLDkwIDEwLDkwIDEwLDQwIi8+PHBvbHlnb24gcG9pbnRzPSI0MCw2MCA2MCw2MCA2MCw5MCA0MCw5MCIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC4zIi8+PC9zdmc+",
+        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32],
         shadowSize: [41, 41],
       }),
     [],
@@ -47,11 +61,34 @@ export default function LeafletMap({ pois }: LeafletMapProps) {
       />
 
       {pois.map((poi, idx) => (
-        <Marker key={idx} position={[poi.lat, poi.lng]} icon={defaultIcon}>
+        <Marker key={`poi-${idx}`} position={[poi.lat, poi.lng]} icon={poiIcon}>
           <Popup>
             <div className="space-y-1">
               <div className="font-semibold">{poi.name}</div>
               <div className="text-xs text-gray-600">{poi.category}</div>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+
+      {airbnbListings.map((listing, idx) => (
+        <Marker
+          key={`airbnb-${idx}`}
+          position={[listing.location.lat, listing.location.lng]}
+          icon={airbnbIcon}
+        >
+          <Popup>
+            <div className="space-y-1">
+              <div className="font-semibold">{listing.name}</div>
+              <div className="text-xs text-gray-600">{listing.price}</div>
+              <a
+                href={listing.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 hover:underline"
+              >
+                View on Airbnb
+              </a>
             </div>
           </Popup>
         </Marker>

@@ -8,6 +8,7 @@ CREATE TABLE trips (
   
   -- Trip Basic Info
   destination VARCHAR(255) NOT NULL,
+  origin VARCHAR(255),
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   budget_usd DECIMAL(10, 2) NOT NULL,
