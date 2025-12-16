@@ -23,10 +23,6 @@ const TripPlannerNodeNames = {
 } as const;
 
 /**
- * Create and compile the trip planner graph
- * This is done once at startup and reused for multiple invocations
- */
-/**
  * Routing function to determine if transportation mode node should run
  * Returns the next node based on whether both coordinates are available
  */
@@ -35,36 +31,54 @@ function routeAfterGeocoding(state: TripPlannerState): string {
   if (state.originCoordinates && state.destinationCoordinates) {
     return TripPlannerNodeNames.determineTransportationMode;
   }
-  // Otherwise, skip to discovering POIs
-  return TripPlannerNodeNames.discoverPois;
+  // Otherwise, skip to END
+  return END;
 }
 
+/**
+ * Create and compile the trip planner graph
+ * This is done once at startup and reused for multiple invocations
+ */
 function createTripPlannerGraph() {
   const workflow = new StateGraph(TripPlannerStateAnnotation)
     // Add nodes
     .addNode(TripPlannerNodeNames.validateInput, validateInput)
     .addNode(TripPlannerNodeNames.geocodeLocations, geocodeLocations)
-    .addNode(TripPlannerNodeNames.determineTransportationMode, determineTransportationMode)
+    .addNode(
+      TripPlannerNodeNames.determineTransportationMode,
+      determineTransportationMode
+    )
     .addNode(TripPlannerNodeNames.discoverPois, discoverInterestPoints)
-    // .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
     .addNode(TripPlannerNodeNames.searchAccommodation, searchAccommodation)
-    // Add edges for sequential execution
+    // Add edges: start with validation
     .addEdge(START, TripPlannerNodeNames.validateInput)
-    .addEdge(TripPlannerNodeNames.validateInput, TripPlannerNodeNames.geocodeLocations)
-    // Conditional edge: only determine transportation mode if both coordinates exist
+    // After validation, run all three nodes in parallel
+    .addEdge(
+      TripPlannerNodeNames.validateInput,
+      TripPlannerNodeNames.geocodeLocations
+    )
+    .addEdge(
+      TripPlannerNodeNames.validateInput,
+      TripPlannerNodeNames.discoverPois
+    )
+    .addEdge(
+      TripPlannerNodeNames.validateInput,
+      TripPlannerNodeNames.searchAccommodation
+    )
+    // Conditional edge from geocodeLocations: determine transportation mode if both coordinates exist
     .addConditionalEdges(
       TripPlannerNodeNames.geocodeLocations,
       routeAfterGeocoding,
       {
-        [TripPlannerNodeNames.determineTransportationMode]: TripPlannerNodeNames.determineTransportationMode,
-        [TripPlannerNodeNames.discoverPois]: TripPlannerNodeNames.discoverPois,
+        [TripPlannerNodeNames.determineTransportationMode]:
+          TripPlannerNodeNames.determineTransportationMode,
+        [END]: END,
       }
     )
-    // After transportation mode determination, continue to POI discovery
-    .addEdge(TripPlannerNodeNames.determineTransportationMode, TripPlannerNodeNames.discoverPois)
-    .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.searchAccommodation)
-    // .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
-    // .addEdge(TripPlannerNodeNames.planRoutes, TripPlannerNodeNames.searchAccommodation)
+    // After transportation mode determination, continue to END
+    .addEdge(TripPlannerNodeNames.determineTransportationMode, END)
+    // Other parallel nodes complete and merge at END
+    .addEdge(TripPlannerNodeNames.discoverPois, END)
     .addEdge(TripPlannerNodeNames.searchAccommodation, END);
 
   return workflow.compile();
@@ -88,7 +102,7 @@ function getCompiledGraph() {
  */
 export async function executeTripPlanner(
   input: Omit<TripPlannerState, "errors" | "startTime" | "endTime">,
-  timeout?: number,
+  timeout?: number
 ): Promise<TripPlannerState> {
   const graph = getCompiledGraph();
 
