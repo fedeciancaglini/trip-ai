@@ -3,6 +3,17 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { SavedTrip } from "@/lib/types";
 import { Calendar, MapPin, DollarSign, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -14,9 +25,10 @@ interface TripCardProps {
 
 export function TripCard({ trip, onDelete }: TripCardProps) {
   const [deleting, setDeleting] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleDelete = async () => {
-    if (!onDelete || !confirm("Are you sure you want to delete this trip?")) {
+    if (!onDelete) {
       return;
     }
 
@@ -28,6 +40,7 @@ export function TripCard({ trip, onDelete }: TripCardProps) {
 
       if (response.ok) {
         onDelete(trip.id);
+        setOpen(false);
       }
     } catch (error) {
       console.error("Failed to delete trip:", error);
@@ -85,14 +98,31 @@ export function TripCard({ trip, onDelete }: TripCardProps) {
             </Button>
 
             {onDelete && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <AlertDialog open={open} onOpenChange={setOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Trip</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this trip? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleting ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         </div>

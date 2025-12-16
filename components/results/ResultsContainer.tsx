@@ -57,7 +57,10 @@ export function ResultsContainer(props: ResultsContainerProps) {
         body: JSON.stringify(payload),
       });
 
-      const data = (await response.json()) as { success: boolean; error?: string };
+      const data = (await response.json()) as {
+        success: boolean;
+        error?: string;
+      };
 
       if (!response.ok || !data.success) {
         setSaveError(data.error || "Failed to save trip");
@@ -65,12 +68,9 @@ export function ResultsContainer(props: ResultsContainerProps) {
       }
 
       setSaved(true);
-      setTimeout(() => {
-        window.location.href = "/saved-trips";
-      }, 2000);
     } catch (error) {
       setSaveError(
-        error instanceof Error ? error.message : "Failed to save trip",
+        error instanceof Error ? error.message : "Failed to save trip"
       );
     } finally {
       setSaveInProgress(false);

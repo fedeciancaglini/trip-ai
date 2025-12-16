@@ -1,8 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { ExternalLink } from "lucide-react";
 import type { POI, AirbnbListing } from "@/lib/types";
+import { capitalize } from "@/lib/utils";
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
@@ -38,17 +41,29 @@ export function InteractiveMap({ pois, airbnbListings }: InteractiveMapProps) {
 
       {/* POI legend */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {pois.slice(0, 12).map((poi, idx) => (
-          <div
-            key={idx}
-            className="text-sm p-2 bg-gray-50 rounded border border-gray-200"
-          >
-            <p className="font-medium text-gray-900">
-              {idx + 1}. {poi.name}
-            </p>
-            <p className="text-xs text-gray-500">{poi.category}</p>
-          </div>
-        ))}
+        {pois.slice(0, 12).map((poi, idx) => {
+          const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(
+            poi.name
+          )}/@${poi.lat},${poi.lng},15z`;
+
+          return (
+            <Link
+              key={idx}
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm p-2 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 hover:border-blue-300 transition-colors group"
+            >
+              <p className="font-medium text-gray-900 group-hover:text-blue-600 flex items-center gap-1">
+                {idx + 1}. {poi.name}
+                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100" />
+              </p>
+              <p className="text-xs text-gray-500">
+                {capitalize(poi.category)}
+              </p>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

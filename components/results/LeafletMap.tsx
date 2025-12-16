@@ -78,14 +78,23 @@ export default function LeafletMap({ pois, airbnbListings = [] }: LeafletMapProp
           icon={airbnbIcon}
         >
           <Popup>
-            <div className="space-y-1">
+            <div className="space-y-2 max-w-xs">
               <div className="font-semibold">{listing.name}</div>
-              <div className="text-xs text-gray-600">{listing.price}</div>
+              <div className="text-sm text-gray-700 font-medium">Total ${listing.price}</div>
+              <div className="text-xs text-gray-600">
+                {listing.pricePerNight && <div>Per night: ${listing.pricePerNight}</div>}
+              </div>
+              {(listing.rating || listing.reviewCount) && (
+                <div className="text-xs text-gray-600">
+                  {listing.rating && <span>★ {listing.rating}</span>}
+                  {listing.reviewCount && <span> ({listing.reviewCount} reviews)</span>}
+                </div>
+              )}
               <a
                 href={listing.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-blue-600 hover:underline block"
               >
                 View on Airbnb
               </a>
