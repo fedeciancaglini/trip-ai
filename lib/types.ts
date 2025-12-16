@@ -87,6 +87,10 @@ export const TripPlannerStateAnnotation = Annotation.Root({
   originCoordinates: Annotation<{ lat: number; lng: number } | undefined>({
     reducer: (x, y) => y ?? x,
   }),
+  // Transportation mode
+  transportationMode: Annotation<string | undefined>({
+    reducer: (x, y) => y ?? x,
+  }),
   // Processing
   pointsOfInterest: Annotation<POI[]>({
     reducer: (x, y) => y ?? x ?? [],

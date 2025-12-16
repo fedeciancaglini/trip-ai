@@ -7,6 +7,7 @@ import { StateGraph, START, END } from "@langchain/langgraph";
 import { TripPlannerStateAnnotation, type TripPlannerState } from "./types";
 import { validateInput } from "./nodes/input-validation";
 import { geocodeLocations } from "./nodes/geocoding";
+import { determineTransportationMode } from "./nodes/transportation-mode";
 import { discoverInterestPoints } from "./nodes/interest-points";
 import { planRoutes } from "./nodes/route-planning";
 import { searchAccommodation } from "./nodes/accommodation";
@@ -15,6 +16,7 @@ import { searchAccommodation } from "./nodes/accommodation";
 const TripPlannerNodeNames = {
   validateInput: "validate_input",
   geocodeLocations: "geocode_locations",
+  determineTransportationMode: "determine_transportation_mode",
   discoverPois: "discover_pois",
   planRoutes: "plan_routes",
   searchAccommodation: "search_accommodation",
@@ -24,18 +26,42 @@ const TripPlannerNodeNames = {
  * Create and compile the trip planner graph
  * This is done once at startup and reused for multiple invocations
  */
+/**
+ * Routing function to determine if transportation mode node should run
+ * Returns the next node based on whether both coordinates are available
+ */
+function routeAfterGeocoding(state: TripPlannerState): string {
+  // If both origin and destination coordinates exist, determine transportation mode
+  if (state.originCoordinates && state.destinationCoordinates) {
+    return TripPlannerNodeNames.determineTransportationMode;
+  }
+  // Otherwise, skip to discovering POIs
+  return TripPlannerNodeNames.discoverPois;
+}
+
 function createTripPlannerGraph() {
   const workflow = new StateGraph(TripPlannerStateAnnotation)
     // Add nodes
     .addNode(TripPlannerNodeNames.validateInput, validateInput)
     .addNode(TripPlannerNodeNames.geocodeLocations, geocodeLocations)
+    .addNode(TripPlannerNodeNames.determineTransportationMode, determineTransportationMode)
     .addNode(TripPlannerNodeNames.discoverPois, discoverInterestPoints)
     // .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
     .addNode(TripPlannerNodeNames.searchAccommodation, searchAccommodation)
     // Add edges for sequential execution
     .addEdge(START, TripPlannerNodeNames.validateInput)
     .addEdge(TripPlannerNodeNames.validateInput, TripPlannerNodeNames.geocodeLocations)
-    .addEdge(TripPlannerNodeNames.geocodeLocations, TripPlannerNodeNames.discoverPois)
+    // Conditional edge: only determine transportation mode if both coordinates exist
+    .addConditionalEdges(
+      TripPlannerNodeNames.geocodeLocations,
+      routeAfterGeocoding,
+      {
+        [TripPlannerNodeNames.determineTransportationMode]: TripPlannerNodeNames.determineTransportationMode,
+        [TripPlannerNodeNames.discoverPois]: TripPlannerNodeNames.discoverPois,
+      }
+    )
+    // After transportation mode determination, continue to POI discovery
+    .addEdge(TripPlannerNodeNames.determineTransportationMode, TripPlannerNodeNames.discoverPois)
     .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.searchAccommodation)
     // .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
     // .addEdge(TripPlannerNodeNames.planRoutes, TripPlannerNodeNames.searchAccommodation)
