@@ -83,6 +83,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           totalDuration: "",
           routes: [],
         },
+        destinationCoordinates: undefined,
+        originCoordinates: undefined,
+        transportationMode: undefined,
         airbnbRecommendations: [],
       },
       // comment out timeout for now
