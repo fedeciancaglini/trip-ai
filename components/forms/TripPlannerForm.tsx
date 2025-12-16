@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { PlanTripResponse } from "@/lib/types";
 
@@ -36,7 +40,7 @@ interface TripPlannerFormProps {
       dailyItinerary: any;
       routeInformation: any;
       airbnbRecommendations: any;
-    },
+    }
   ) => void;
 }
 
@@ -129,7 +133,7 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
             endDate: state.endDate,
             budgetUsd: state.budgetUsd,
           },
-          data.data,
+          data.data
         );
       }
     } catch (error) {
@@ -150,7 +154,10 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Destination */}
         <div>
-          <label htmlFor="destination" className="block text-sm font-medium mb-2">
+          <label
+            htmlFor="destination"
+            className="block text-sm font-medium mb-2"
+          >
             Destination
           </label>
           <Input
@@ -167,7 +174,9 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
             disabled={state.loading}
           />
           {state.errors.destination && (
-            <p className="text-red-500 text-sm mt-1">{state.errors.destination}</p>
+            <p className="text-red-500 text-sm mt-1">
+              {state.errors.destination}
+            </p>
           )}
         </div>
 
@@ -191,83 +200,62 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
           />
         </div>
 
-        {/* Start Date */}
+        {/* Date Range */}
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Start date
-          </label>
+          <label className="block text-sm font-medium mb-2">Dates</label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
                   "w-full justify-between font-normal",
-                  !state.startDate && "text-muted-foreground",
+                  !(state.startDate && state.endDate) && "text-muted-foreground"
                 )}
                 disabled={state.loading}
               >
                 <span>
-                  {state.startDate
-                    ? format(new Date(state.startDate), "PPP")
-                    : "Select start date"}
+                  {state.startDate && state.endDate
+                    ? `${format(
+                        parse(state.startDate, "yyyy-MM-dd", new Date()),
+                        "PPP"
+                      )} - ${format(
+                        parse(state.endDate, "yyyy-MM-dd", new Date()),
+                        "PPP"
+                      )}`
+                    : "Select date range"}
                 </span>
                 <CalendarIcon className="h-4 w-4 opacity-70" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
-                mode="single"
-                selected={state.startDate ? new Date(state.startDate) : undefined}
-                onSelect={(date) => {
+                mode="range"
+                selected={{
+                  from: state.startDate
+                    ? parse(state.startDate, "yyyy-MM-dd", new Date())
+                    : undefined,
+                  to: state.endDate
+                    ? parse(state.endDate, "yyyy-MM-dd", new Date())
+                    : undefined,
+                }}
+                onSelect={(range) => {
                   setState((prev) => ({
                     ...prev,
-                    startDate: date ? format(date, "yyyy-MM-dd") : "",
+                    startDate: range?.from
+                      ? format(range.from, "yyyy-MM-dd")
+                      : "",
+                    endDate: range?.to ? format(range.to, "yyyy-MM-dd") : "",
                   }));
                 }}
+                numberOfMonths={2}
               />
             </PopoverContent>
           </Popover>
           {state.errors.startDate && (
-            <p className="text-red-500 text-sm mt-1">{state.errors.startDate}</p>
+            <p className="text-red-500 text-sm mt-1">
+              {state.errors.startDate}
+            </p>
           )}
-        </div>
-
-        {/* End Date */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            End date
-          </label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-between font-normal",
-                  !state.endDate && "text-muted-foreground",
-                )}
-                disabled={state.loading}
-              >
-                <span>
-                  {state.endDate
-                    ? format(new Date(state.endDate), "PPP")
-                    : "Select end date"}
-                </span>
-                <CalendarIcon className="h-4 w-4 opacity-70" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={state.endDate ? new Date(state.endDate) : undefined}
-                onSelect={(date) => {
-                  setState((prev) => ({
-                    ...prev,
-                    endDate: date ? format(date, "yyyy-MM-dd") : "",
-                  }));
-                }}
-              />
-            </PopoverContent>
-          </Popover>
           {state.errors.endDate && (
             <p className="text-red-500 text-sm mt-1">{state.errors.endDate}</p>
           )}
@@ -293,7 +281,9 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
             min="1"
           />
           {state.errors.budgetUsd && (
-            <p className="text-red-500 text-sm mt-1">{state.errors.budgetUsd}</p>
+            <p className="text-red-500 text-sm mt-1">
+              {state.errors.budgetUsd}
+            </p>
           )}
         </div>
 
@@ -310,11 +300,7 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
         )}
 
         {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={state.loading}
-          className="w-full"
-        >
+        <Button type="submit" disabled={state.loading} className="w-full">
           {state.loading ? "Planning your trip..." : "Plan My Trip"}
         </Button>
       </form>
