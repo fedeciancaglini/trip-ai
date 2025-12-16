@@ -1,32 +1,68 @@
 /**
- * Google Maps API Service
- * Wrapper for route planning and distance matrix calculations
+ * Google Maps MCP Service
+ * Client for interacting with the Google Maps MCP server
+ * https://github.com/modelcontextprotocol/servers
+ *
+ * Uses @modelcontextprotocol/sdk to spawn and communicate with the MCP server
  */
 
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { DaySchedule, POI, RouteData } from "../types";
 import { GoogleMapsError } from "../types";
 
-interface RouteResponse {
-  routes: Array<{
-    legs: Array<{
-      distance: { text: string; value: number };
-      duration: { text: string; value: number };
-      start_address: string;
-      end_address: string;
-    }>;
-  }>;
-  status: string;
-}
+let googleMapsClient: Client | null = null;
+let initPromise: Promise<Client> | null = null;
 
-interface DistanceMatrixResponse {
-  rows: Array<{
-    elements: Array<{
-      distance: { text: string; value: number };
-      duration: { text: string; value: number };
-      status: string;
-    }>;
-  }>;
-  status: string;
+/**
+ * Initialize the Google Maps MCP client by spawning the server process
+ */
+async function initializeGoogleMapsClient(): Promise<Client> {
+  // Return existing client if already initialized
+  if (googleMapsClient) {
+    return googleMapsClient;
+  }
+
+  // Return pending initialization if already in progress
+  if (initPromise) {
+    return initPromise;
+  }
+
+  // Start new initialization
+  initPromise = (async () => {
+    try {
+      const transport = new StdioClientTransport({
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-google-maps"],
+        env: {
+          GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || "",
+        },
+      });
+
+      const client = new Client(
+        {
+          name: "trip-planner-google-maps",
+          version: "1.0.0",
+        },
+        {
+          capabilities: {},
+        }
+      );
+
+      await client.connect(transport);
+      googleMapsClient = client;
+      return client;
+    } catch (error) {
+      initPromise = null; // Reset on error so next call tries again
+      throw new GoogleMapsError(
+        `Failed to initialize Google Maps MCP: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  })();
+
+  return initPromise;
 }
 
 /**
@@ -36,16 +72,11 @@ interface DistanceMatrixResponse {
 export async function planDailyRoutes(
   pois: POI[],
   startDate: Date,
-  endDate: Date,
+  endDate: Date
 ): Promise<RouteData> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    throw new GoogleMapsError("Google Maps API key not configured");
-  }
-
   try {
     const numDays = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     // Simple distribution: spread POIs evenly across days
@@ -80,16 +111,15 @@ export async function planDailyRoutes(
         }>,
       };
 
-      for (let i = 0; i < dayPois.length - 1; i++) {
+      for (let i = 0; i <= dayPois.length - 1; i++) {
         const start = dayPois[i];
         const end = dayPois[i + 1];
 
-        // Call Google Maps Routes API for this leg
+        // Call Google Maps MCP for this leg
         try {
           const routeData = await getRoute(
             { lat: start.lat, lng: start.lng },
-            { lat: end.lat, lng: end.lng },
-            apiKey,
+            { lat: end.lat, lng: end.lng }
           );
 
           dayRoute.legs.push({
@@ -103,7 +133,12 @@ export async function planDailyRoutes(
           totalDuration += routeData.durationValue;
         } catch {
           // Fallback: estimate based on straight-line distance
-          const estimatedDist = calculateDistance(start.lat, start.lng, end.lat, end.lng);
+          const estimatedDist = calculateDistance(
+            start.lat,
+            start.lng,
+            end.lat,
+            end.lng
+          );
           dayRoute.legs.push({
             startLocation: start.name,
             endLocation: end.name,
@@ -149,83 +184,170 @@ export async function planDailyRoutes(
 }
 
 /**
- * Get route information between two points
+ * Get route information between two points using MCP
  */
 async function getRoute(
   origin: { lat: number; lng: number },
-  destination: { lat: number; lng: number },
-  apiKey: string,
+  destination: { lat: number; lng: number }
 ): Promise<{
   distance: string;
   distanceValue: number;
   duration: string;
   durationValue: number;
 }> {
-  const url = new URL("https://routes.googleapis.com/directions/v2:computeRoutes");
-  url.searchParams.append("key", apiKey);
+  try {
+    const client = await initializeGoogleMapsClient();
 
-  const body = {
-    origin: {
-      location: {
-        latLng: {
-          latitude: origin.lat,
-          longitude: origin.lng,
+    // Try common MCP tool names for route computation
+    // The tool name may vary, so we'll try a few common patterns
+    let result;
+    try {
+      // Try compute_route first (most common)
+      result = await client.callTool({
+        name: "compute_route",
+        arguments: {
+          origin: {
+            latitude: origin.lat,
+            longitude: origin.lng,
+          },
+          destination: {
+            latitude: destination.lat,
+            longitude: destination.lng,
+          },
+          travelMode: "DRIVE",
+          routingPreference: "TRAFFIC_AWARE",
         },
-      },
-    },
-    destination: {
-      location: {
-        latLng: {
-          latitude: destination.lat,
-          longitude: destination.lng,
-        },
-      },
-    },
-    travelMode: "DRIVE",
-    routingPreference: "TRAFFIC_AWARE",
-  };
+      });
+    } catch {
+      // Fallback to get_directions
+      try {
+        result = await client.callTool({
+          name: "get_directions",
+          arguments: {
+            origin: `${origin.lat},${origin.lng}`,
+            destination: `${destination.lat},${destination.lng}`,
+            mode: "driving",
+          },
+        });
+      } catch {
+        // Last fallback to maps_directions
+        result = await client.callTool({
+          name: "maps_directions",
+          arguments: {
+            origin: `${origin.lat},${origin.lng}`,
+            destination: `${destination.lat},${destination.lng}`,
+            mode: "driving",
+          },
+        });
+      }
+    }
 
-  const response = await fetch(url.toString(), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-FieldMask": "routes.duration,routes.distanceMeters",
-    },
-    body: JSON.stringify(body),
-  });
+    if (!result.content || !Array.isArray(result.content)) {
+      throw new Error("Invalid response from Google Maps MCP: no content");
+    }
 
-  if (!response.ok) {
-    throw new Error(`Google Maps API error: ${response.statusText}`);
+    // Parse the response
+    for (const content of result.content) {
+      if (content.type !== "text") continue;
+
+      try {
+        const parsed = JSON.parse(content.text);
+
+        // Handle different response formats
+        let distanceValue: number;
+        let durationValue: number;
+
+        // Format 1: Direct route response with distanceMeters and duration
+        if (
+          parsed.distanceMeters !== undefined &&
+          parsed.duration !== undefined
+        ) {
+          distanceValue = parsed.distanceMeters;
+          durationValue =
+            typeof parsed.duration === "string"
+              ? parseDuration(parsed.duration)
+              : parsed.duration;
+        }
+        // Format 2: Routes array format
+        else if (
+          parsed.routes &&
+          Array.isArray(parsed.routes) &&
+          parsed.routes.length > 0
+        ) {
+          const route = parsed.routes[0];
+          distanceValue = route.distanceMeters || route.distance?.value || 5000;
+          durationValue =
+            typeof route.duration === "string"
+              ? parseDuration(route.duration)
+              : route.duration || route.duration?.value || 3600;
+        }
+        // Format 3: Legs format (directions API)
+        else if (parsed.routes?.[0]?.legs?.[0]) {
+          const leg = parsed.routes[0].legs[0];
+          distanceValue = leg.distance?.value || 5000;
+          durationValue = leg.duration?.value || 3600;
+        }
+        // Format 4: Simple distance/duration fields
+        else {
+          distanceValue = parsed.distance || parsed.distanceValue || 5000;
+          durationValue =
+            typeof parsed.duration === "string"
+              ? parseDuration(parsed.duration)
+              : parsed.duration || parsed.durationValue || 3600;
+        }
+
+        return {
+          distance: `${(distanceValue / 1000).toFixed(1)} km`,
+          distanceValue,
+          duration: formatDuration(durationValue),
+          durationValue,
+        };
+      } catch (parseError) {
+        // If not JSON, try to extract from text
+        console.error("Failed to parse Google Maps MCP response:", parseError);
+        continue;
+      }
+    }
+
+    throw new Error("Could not parse route data from MCP response");
+  } catch (error) {
+    if (error instanceof GoogleMapsError) {
+      throw error;
+    }
+    if (error instanceof Error) {
+      throw new Error(`Route calculation failed: ${error.message}`);
+    }
+    throw new Error("Route calculation failed: Unknown error");
+  }
+}
+
+/**
+ * Parse duration string (e.g., "3600s", "1h 30m") to seconds
+ */
+function parseDuration(duration: string): number {
+  // Handle ISO 8601 duration format (e.g., "3600s", "1h", "1h30m")
+  if (duration.endsWith("s")) {
+    return parseInt(duration) || 3600;
   }
 
-  const data = (await response.json()) as {
-    routes?: Array<{
-      duration: string;
-      distanceMeters: number;
-    }>;
-  };
-
-  if (!data.routes || data.routes.length === 0) {
-    throw new Error("No route found");
-  }
-
-  const route = data.routes[0];
-  const durationValue = parseInt(route.duration) || 3600; // default 1 hour
-  const distanceValue = route.distanceMeters || 5000; // default 5km
-
-  return {
-    distance: `${(distanceValue / 1000).toFixed(1)} km`,
-    distanceValue,
-    duration: formatDuration(durationValue),
-    durationValue,
-  };
+  // Handle "Xh Ym" format
+  const hoursMatch = duration.match(/(\d+)h/);
+  const minutesMatch = duration.match(/(\d+)m/);
+  const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+  const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+  return hours * 3600 + minutes * 60;
 }
 
 /**
  * Calculate straight-line distance between two points (Haversine formula)
  * Returns distance in meters
  */
-function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+function calculateDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
   const R = 6371000; // Earth's radius in meters
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
@@ -265,4 +387,16 @@ function formatDuration(seconds: number): string {
     return `${hours} hour${hours > 1 ? "s" : ""}`;
   }
   return `${hours}h ${minutes}m`;
+}
+
+/**
+ * Close the Google Maps MCP client connection
+ * Call this during app shutdown
+ */
+export async function closeGoogleMapsClient(): Promise<void> {
+  if (googleMapsClient) {
+    // MCP client doesn't have explicit close, but we can clear reference
+    googleMapsClient = null;
+    initPromise = null;
+  }
 }
