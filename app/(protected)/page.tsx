@@ -1,9 +1,10 @@
-"use client";
+ "use client";
 
 import { useState } from "react";
 import { TripPlannerForm } from "@/components/forms/TripPlannerForm";
 import { ResultsContainer } from "@/components/results/ResultsContainer";
 import type { POI, DaySchedule, RouteData, AirbnbListing } from "@/lib/types";
+import { mockResultsData } from "@/lib/mockTripData";
 
 interface FormInputs {
   destination: string;
@@ -23,6 +24,24 @@ interface Results {
 
 export default function PlanPage() {
   const [results, setResults] = useState<Results | null>(null);
+  // const [results, setResults] = useState<Results | null>({
+  //   formInputs: {
+  //     destination: "Pilar Buenos Aires",
+  //     origin: "Bariloche",
+  //     startDate: "2026-01-02T00:00:00.000Z",
+  //     endDate: "2026-01-16T00:00:00.000Z",
+  //     budgetUsd: 1000,
+  //   },
+  //   pointsOfInterest: mockResultsData?.pointsOfInterest ?? [],
+  //   dailyItinerary: mockResultsData?.dailyItinerary ?? [],
+  //   routeInformation:
+  //     mockResultsData?.routeInformation ?? {
+  //       totalDistance: "",
+  //       totalDuration: "",
+  //       routes: [],
+  //     },
+  //   airbnbRecommendations: mockResultsData?.airbnbRecommendations ?? [],
+  // });
 
   const handlePlanTrip = (
     formInputs: FormInputs,

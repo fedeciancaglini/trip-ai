@@ -49,7 +49,7 @@ export async function discoverPointsOfInterest(
     );
 
     const { object } = await generateObject({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-2.5-flash-lite"),
       schema: POIDiscoverySchema,
       prompt: `
       You are a travel expert. Suggest 10-12 interesting points of interest for a ${tripLength}-day trip to ${destination}.

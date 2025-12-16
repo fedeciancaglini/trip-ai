@@ -1,20 +1,24 @@
 "use client";
 
 import type { DayPOI } from "@/lib/types";
-import { MapPin, Clock } from "lucide-react";
+import { MapPin, Clock, ExternalLink } from "lucide-react";
 
 interface TimelineItemProps {
   poi: DayPOI;
-  isFirst: boolean;
+  isLast: boolean;
 }
 
-export function TimelineItem({ poi, isFirst }: TimelineItemProps) {
+export function TimelineItem({ poi, isLast }: TimelineItemProps) {
+  const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(
+    poi.name
+  )}/@${poi.lat},${poi.lng},15z`;
+
   return (
     <div className="flex gap-4">
       {/* Timeline line */}
       <div className="flex flex-col items-center">
         <div className="w-3 h-3 rounded-full bg-blue-500 mt-2" />
-        {!isFirst && <div className="w-0.5 h-20 bg-gray-300 mt-2" />}
+        {!isLast && <div className="w-0.5 h-full bg-gray-300 mt-2" />}
       </div>
 
       {/* Content */}
@@ -28,12 +32,16 @@ export function TimelineItem({ poi, isFirst }: TimelineItemProps) {
               <Clock className="w-4 h-4 text-gray-500" />
               <span>{poi.timeWindow}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-gray-500" />
-              <span>
-                {poi.lat.toFixed(4)}, {poi.lng.toFixed(4)}
-              </span>
-            </div>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              <MapPin className="w-4 h-4" />
+              View on Google Maps
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
 
           {poi.travelTimeFromPrevious > 0 && (

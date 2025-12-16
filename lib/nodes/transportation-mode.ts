@@ -71,7 +71,7 @@ export async function determineTransportationMode(
 
     // Use LLM to determine transportation mode
     const { object } = await generateObject({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-2.5-flash-lite"),
       schema: TransportationModeSchema,
       prompt: `
         You are a travel expert. Determine the most appropriate transportation mode for a trip from ${state.origin || "origin"} to ${state.destination}.

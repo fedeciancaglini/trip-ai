@@ -32,7 +32,7 @@ export function DayCard({ day }: DayCardProps) {
 
       <div className="space-y-2">
         {day.pois.map((poi, idx) => (
-          <TimelineItem key={`${day.day}-${idx}`} poi={poi} isFirst={idx === 0} />
+          <TimelineItem key={`${day.day}-${idx}`} poi={poi} isLast={idx === day.pois.length - 1} />
         ))}
       </div>
     </Card>

@@ -49,6 +49,7 @@ function createTripPlannerGraph() {
       determineTransportationMode
     )
     .addNode(TripPlannerNodeNames.discoverPois, discoverInterestPoints)
+    .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
     .addNode(TripPlannerNodeNames.searchAccommodation, searchAccommodation)
     // Add edges: start with validation
     .addEdge(START, TripPlannerNodeNames.validateInput)
@@ -77,8 +78,11 @@ function createTripPlannerGraph() {
     )
     // After transportation mode determination, continue to END
     .addEdge(TripPlannerNodeNames.determineTransportationMode, END)
-    // Other parallel nodes complete and merge at END
-    .addEdge(TripPlannerNodeNames.discoverPois, END)
+    // After discovering POIs, plan the routes
+    .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
+    // After route planning, continue to END
+    .addEdge(TripPlannerNodeNames.planRoutes, END)
+    // Search accommodation runs in parallel and completes at END
     .addEdge(TripPlannerNodeNames.searchAccommodation, END);
 
   return workflow.compile();
