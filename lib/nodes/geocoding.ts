@@ -11,7 +11,7 @@ import type { TripPlannerState } from "../types";
  */
 export async function geocodeLocations(
   state: TripPlannerState,
-): Promise<TripPlannerState> {
+): Promise<Partial<TripPlannerState>> {
   try {
     const updates: Partial<TripPlannerState> = {};
 
@@ -22,9 +22,7 @@ export async function geocodeLocations(
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return {
-        ...state,
         errors: [
-          ...state.errors,
           `Failed to geocode destination "${state.destination}": ${message}`,
         ],
       };
@@ -39,25 +37,19 @@ export async function geocodeLocations(
         const message = error instanceof Error ? error.message : String(error);
         // Log warning but don't fail the workflow if origin geocoding fails
         return {
-          ...state,
           ...updates,
           errors: [
-            ...state.errors,
             `Failed to geocode origin "${state.origin}": ${message}. Continuing without origin coordinates.`,
           ],
         };
       }
     }
 
-    return {
-      ...state,
-      ...updates,
-    };
+    return updates;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      ...state,
-      errors: [...state.errors, `Geocoding failed: ${message}`],
+      errors: [`Geocoding failed: ${message}`],
     };
   }
 }

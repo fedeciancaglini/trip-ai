@@ -11,7 +11,7 @@ import { ValidationError } from "../types";
  */
 export async function validateInput(
   state: TripPlannerState,
-): Promise<TripPlannerState> {
+): Promise<Partial<TripPlannerState>> {
   const errors: string[] = [];
 
   // Validate destination
@@ -73,7 +73,6 @@ export async function validateInput(
   }
 
   return {
-    ...state,
     daysCount,
   };
 }

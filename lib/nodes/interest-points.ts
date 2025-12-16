@@ -11,7 +11,7 @@ import type { TripPlannerState } from "../types";
  */
 export async function discoverInterestPoints(
   state: TripPlannerState,
-): Promise<TripPlannerState> {
+): Promise<Partial<TripPlannerState>> {
   try {
     const pois = await discoverPointsOfInterest(
       state.destination,
@@ -24,14 +24,12 @@ export async function discoverInterestPoints(
     }
 
     return {
-      ...state,
       pointsOfInterest: pois,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      ...state,
-      errors: [...state.errors, `POI Discovery failed: ${message}`],
+      errors: [`POI Discovery failed: ${message}`],
     };
   }
 }

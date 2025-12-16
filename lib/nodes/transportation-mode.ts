@@ -50,15 +50,15 @@ const TransportationModeSchema = z.object({
  */
 export async function determineTransportationMode(
   state: TripPlannerState,
-): Promise<TripPlannerState> {
+): Promise<Partial<TripPlannerState>> {
   try {
     // Check if both origin and destination coordinates exist
     if (
       !state.originCoordinates ||
       !state.destinationCoordinates
     ) {
-      // Skip if coordinates are not available
-      return state;
+      // Skip if coordinates are not available - return empty update
+      return {};
     }
 
     // Calculate distance in kilometers
@@ -98,15 +98,12 @@ export async function determineTransportationMode(
     });
 
     return {
-      ...state,
       transportationMode: object.mode,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      ...state,
       errors: [
-        ...state.errors,
         `Transportation mode determination failed: ${message}`,
       ],
     };

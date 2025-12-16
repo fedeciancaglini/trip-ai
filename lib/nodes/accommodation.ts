@@ -11,7 +11,7 @@ import type { TripPlannerState } from "../types";
  */
 export async function searchAccommodation(
   state: TripPlannerState,
-): Promise<TripPlannerState> {
+): Promise<Partial<TripPlannerState>> {
   try {
     const checkInDate = state.startDate.toISOString().split("T")[0];
     const checkOutDate = state.endDate.toISOString().split("T")[0];
@@ -30,14 +30,12 @@ export async function searchAccommodation(
     }
 
     return {
-      ...state,
       airbnbRecommendations: listings.slice(0, 10), // Limit to top 10
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      ...state,
-      errors: [...state.errors, `Accommodation search failed: ${message}`],
+      errors: [`Accommodation search failed: ${message}`],
     };
   }
 }

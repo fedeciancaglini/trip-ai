@@ -9,7 +9,7 @@ import type { TripPlannerState } from "../types";
 /**
  * Plan routes connecting POIs and generate daily itinerary
  */
-export async function planRoutes(state: TripPlannerState): Promise<TripPlannerState> {
+export async function planRoutes(state: TripPlannerState): Promise<Partial<TripPlannerState>> {
   try {
     if (!state.pointsOfInterest || state.pointsOfInterest.length === 0) {
       throw new Error("No POIs available for route planning");
@@ -63,15 +63,13 @@ export async function planRoutes(state: TripPlannerState): Promise<TripPlannerSt
       }));
 
     return {
-      ...state,
       dailyItinerary,
       routeInformation: routeData,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      ...state,
-      errors: [...state.errors, `Route planning failed: ${message}`],
+      errors: [`Route planning failed: ${message}`],
     };
   }
 }
