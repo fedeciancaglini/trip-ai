@@ -83,7 +83,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         },
         airbnbRecommendations: [],
       },
-      AGENT_TIMEOUT,
+      // comment out timeout for now
+      // AGENT_TIMEOUT,
     );
 
     // Check for errors

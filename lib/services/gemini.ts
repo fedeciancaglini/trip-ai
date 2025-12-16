@@ -1,13 +1,35 @@
 /**
  * Gemini API Service
- * Wrapper for Google's Generative AI API for POI discovery
+ * Wrapper for Google's Generative AI API for POI discovery using Vercel AI SDK
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateObject, generateText } from "ai";
+import { google } from "@ai-sdk/google";
+import { z } from "zod";
 import type { POI } from "../types";
 import { GeminiError } from "../types";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// Zod schema for POI discovery response
+const POIDiscoverySchema = z.object({
+  pois: z.array(
+    z.object({
+      name: z.string(),
+      description: z.string(),
+      category: z.enum([
+        "museum",
+        "landmark",
+        "park",
+        "restaurant",
+        "market",
+        "historical",
+        "natural",
+        "entertainment",
+      ]),
+      lat: z.number(),
+      lng: z.number(),
+    })
+  ),
+});
 
 /**
  * Discover points of interest for a destination using Gemini
@@ -19,74 +41,31 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 export async function discoverPointsOfInterest(
   destination: string,
   startDate: Date,
-  endDate: Date,
+  endDate: Date
 ): Promise<POI[]> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
     const tripLength = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    const prompt = `You are a travel expert. Suggest 10-12 interesting points of interest for a ${tripLength}-day trip to ${destination}. 
+    const { object } = await generateObject({
+      model: google("gemini-2.5-flash"),
+      schema: POIDiscoverySchema,
+      prompt: `
+      You are a travel expert. Suggest 10-12 interesting points of interest for a ${tripLength}-day trip to ${destination}.
 
-Return ONLY valid JSON in this format, no markdown code blocks:
-{
-  "pois": [
-    {
-      "name": "POI Name",
-      "description": "2-3 sentence description of why it's worth visiting",
-      "category": "museum|landmark|park|restaurant|market|historical|natural|entertainment",
-      "lat": 48.8584,
-      "lng": 2.2945
-    }
-  ]
-}
-
-Requirements:
-- Include a mix of categories
-- Provide accurate latitude/longitude coordinates
-- Descriptions should be engaging and specific
-- Focus on popular, accessible attractions suitable for tourists
-- Spread across different areas of ${destination}`;
-
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-
-    // Parse the JSON response
-    let jsonString = responseText;
-    
-    // Remove markdown code block markers if present
-    if (jsonString.includes("```json")) {
-      jsonString = jsonString.replace(/```json\n?/g, "").replace(/```\n?/g, "");
-    } else if (jsonString.includes("```")) {
-      jsonString = jsonString.replace(/```\n?/g, "");
-    }
-
-    const parsed = JSON.parse(jsonString.trim());
-
-    if (!Array.isArray(parsed.pois)) {
-      throw new Error("Invalid response format: missing pois array");
-    }
-
-    // Validate POI structure
-    const pois: POI[] = parsed.pois.map((poi: unknown) => {
-      const p = poi as Record<string, unknown>;
-      return {
-        name: String(p.name),
-        description: String(p.description),
-        lat: Number(p.lat),
-        lng: Number(p.lng),
-        category: String(p.category),
-      };
+      Requirements:
+      - Include a mix of categories (museum, landmark, park, restaurant, market, historical, natural, entertainment)
+      - Provide accurate latitude/longitude coordinates
+      - Descriptions should be engaging and specific (2-3 sentences explaining why it's worth visiting)
+      - Focus on popular, accessible attractions suitable for tourists
+      - Spread across different areas of ${destination}`,
     });
 
-    return pois;
+    return object.pois;
   } catch (error) {
     if (error instanceof Error) {
-      throw new GeminiError(
-        `Failed to discover POIs: ${error.message}`,
-      );
+      throw new GeminiError(`Failed to discover POIs: ${error.message}`);
     }
     throw new GeminiError("Failed to discover POIs: Unknown error");
   }
@@ -102,30 +81,31 @@ Requirements:
 export async function generateScheduleRecommendations(
   destination: string,
   pois: POI[],
-  numDays: number,
+  numDays: number
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
     const poiList = pois
       .map((poi) => `- ${poi.name} (${poi.category}): ${poi.description}`)
       .join("\n");
 
-    const prompt = `You are a travel itinerary planner. Given these ${numDays} days and points of interest in ${destination}, provide recommendations for how to organize a daily schedule.
+    const { text } = await generateText({
+      model: google("gemini-1.5-flash"),
+      prompt: `
+        You are a travel itinerary planner. Given these ${numDays} days and points of interest in ${destination}, provide recommendations for how to organize a daily schedule.
 
-Points of Interest:
-${poiList}
+        Points of Interest:
+        ${poiList}
 
-Provide practical advice about:
-1. Which days to visit which attractions
-2. Optimal order to minimize travel time
-3. Time allocation for each location
-4. General pacing recommendations
+        Provide practical advice about:
+        1. Which days to visit which attractions
+        2. Optimal order to minimize travel time
+        3. Time allocation for each location
+        4. General pacing recommendations
 
-Be concise and practical.`;
+        Be concise and practical.`,
+    });
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    return text;
   } catch (error) {
     if (error instanceof Error) {
       throw new GeminiError(`Failed to generate schedule: ${error.message}`);
