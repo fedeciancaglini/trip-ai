@@ -72,6 +72,19 @@ export interface AirbnbListing {
 // ============================================================================
 
 // Define LangGraph Annotation for state (single source of truth)
+export interface RoutePolyline {
+  startLocation: string;
+  endLocation: string;
+  points: Array<{ lat: number; lng: number }>;
+  distance: string;
+  duration: string;
+}
+
+export interface DayRoutePolylines {
+  day: number;
+  polylines: RoutePolyline[];
+}
+
 export const TripPlannerStateAnnotation = Annotation.Root({
   // Input
   destination: Annotation<string>(),
@@ -102,6 +115,10 @@ export const TripPlannerStateAnnotation = Annotation.Root({
   }),
   routeInformation: Annotation<RouteData>({
     reducer: (x, y) => y ?? x,
+  }),
+  routePolylines: Annotation<DayRoutePolylines[]>({
+    reducer: (x, y) => y ?? x ?? [],
+    default: () => [],
   }),
   // Output
   airbnbRecommendations: Annotation<AirbnbListing[]>({
@@ -224,6 +241,7 @@ export interface PlanTripResponse {
     dailyItinerary: DaySchedule[];
     routeInformation: RouteData;
     airbnbRecommendations: AirbnbListing[];
+    routePolylines?: DayRoutePolylines[];
   };
   error?: string;
   code?: string;

@@ -10,6 +10,7 @@ import { geocodeLocations } from "./nodes/geocoding";
 import { determineTransportationMode } from "./nodes/transportation-mode";
 import { discoverInterestPoints } from "./nodes/interest-points";
 import { planRoutes } from "./nodes/route-planning";
+import { calculateRoutes } from "./nodes/calculate-routes";
 import { searchAccommodation } from "./nodes/accommodation";
 
 // Trip planner node names
@@ -19,6 +20,7 @@ const TripPlannerNodeNames = {
   determineTransportationMode: "determine_transportation_mode",
   discoverPois: "discover_pois",
   planRoutes: "plan_routes",
+  calculateRoutes: "calculate_routes",
   searchAccommodation: "search_accommodation",
 } as const;
 
@@ -50,6 +52,7 @@ function createTripPlannerGraph() {
     )
     .addNode(TripPlannerNodeNames.discoverPois, discoverInterestPoints)
     .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
+    .addNode(TripPlannerNodeNames.calculateRoutes, calculateRoutes)
     .addNode(TripPlannerNodeNames.searchAccommodation, searchAccommodation)
     // Add edges: start with validation
     .addEdge(START, TripPlannerNodeNames.validateInput)
@@ -80,8 +83,10 @@ function createTripPlannerGraph() {
     .addEdge(TripPlannerNodeNames.determineTransportationMode, END)
     // After discovering POIs, plan the routes
     .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
-    // After route planning, continue to END
-    .addEdge(TripPlannerNodeNames.planRoutes, END)
+    // After route planning, calculate actual routes with polylines
+    .addEdge(TripPlannerNodeNames.planRoutes, TripPlannerNodeNames.calculateRoutes)
+    // After route calculation, continue to END
+    .addEdge(TripPlannerNodeNames.calculateRoutes, END)
     // Search accommodation runs in parallel and completes at END
     .addEdge(TripPlannerNodeNames.searchAccommodation, END);
 

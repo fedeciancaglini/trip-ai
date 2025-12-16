@@ -1,17 +1,19 @@
 "use client";
 
 import { DayCard } from "./DayCard";
-import type { DaySchedule, RouteData } from "@/lib/types";
+import type { DaySchedule, RouteData, DayRoutePolylines } from "@/lib/types";
 import { Map, Clock, Navigation } from "lucide-react";
 
 interface ItinerarySectionProps {
   dailyItinerary: DaySchedule[];
   routeInfo: RouteData;
+  routePolylines?: DayRoutePolylines[];
 }
 
 export function ItinerarySection({
   dailyItinerary,
   routeInfo,
+  routePolylines,
 }: ItinerarySectionProps) {
   const totalPois = dailyItinerary.reduce((sum, day) => sum + day.pois.length, 0);
 
@@ -54,9 +56,12 @@ export function ItinerarySection({
 
       {/* Daily cards */}
       <div className="space-y-4">
-        {dailyItinerary.map((day) => (
-          <DayCard key={day.day} day={day} />
-        ))}
+        {dailyItinerary.map((day) => {
+          const dayPolylines = routePolylines?.find((rp) => rp.day === day.day);
+          return (
+            <DayCard key={day.day} day={day} routePolylines={dayPolylines} />
+          );
+        })}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { TripPlannerForm } from "@/components/forms/TripPlannerForm";
 import { ResultsContainer } from "@/components/results/ResultsContainer";
-import type { POI, DaySchedule, RouteData, AirbnbListing } from "@/lib/types";
+import type { POI, DaySchedule, RouteData, AirbnbListing, DayRoutePolylines } from "@/lib/types";
 import { mockResultsData } from "@/lib/mockTripData";
 
 interface FormInputs {
@@ -20,6 +20,7 @@ interface Results {
   dailyItinerary: DaySchedule[];
   routeInformation: RouteData;
   airbnbRecommendations: AirbnbListing[];
+  routePolylines?: DayRoutePolylines[];
 }
 
 export default function PlanPage() {
@@ -50,6 +51,7 @@ export default function PlanPage() {
       dailyItinerary: DaySchedule[];
       routeInformation: RouteData;
       airbnbRecommendations: AirbnbListing[];
+      routePolylines?: DayRoutePolylines[];
     },
   ) => {
     setResults({
@@ -78,6 +80,7 @@ export default function PlanPage() {
           dailyItinerary={results.dailyItinerary}
           routeInformation={results.routeInformation}
           airbnbRecommendations={results.airbnbRecommendations}
+          routePolylines={results.routePolylines}
         />
       </div>
     );

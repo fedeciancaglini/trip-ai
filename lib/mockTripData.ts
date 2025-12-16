@@ -274,6 +274,7 @@ export const mockTripState: TripPlannerState = {
       image: undefined,
     },
   ],
+  routePolylines: [],
   errors: [],
   startTime: new Date("2025-12-16T12:40:39.904Z"),
   endTime: undefined,

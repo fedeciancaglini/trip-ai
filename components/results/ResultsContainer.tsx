@@ -13,6 +13,7 @@ import type {
   RouteData,
   AirbnbListing,
   SaveTripRequest,
+  DayRoutePolylines,
 } from "@/lib/types";
 import { Loader2, CheckCircle } from "lucide-react";
 
@@ -26,6 +27,7 @@ interface ResultsContainerProps {
   dailyItinerary: DaySchedule[];
   routeInformation: RouteData;
   airbnbRecommendations: AirbnbListing[];
+  routePolylines?: DayRoutePolylines[];
   isAlreadySaved?: boolean;
 }
 
@@ -122,6 +124,7 @@ export function ResultsContainer(props: ResultsContainerProps) {
             <ItinerarySection
               dailyItinerary={props.dailyItinerary}
               routeInfo={props.routeInformation}
+              routePolylines={props.routePolylines}
             />
           </Card>
         </TabsContent>

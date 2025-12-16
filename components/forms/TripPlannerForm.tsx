@@ -40,6 +40,7 @@ interface TripPlannerFormProps {
       dailyItinerary: any;
       routeInformation: any;
       airbnbRecommendations: any;
+      routePolylines?: any;
     }
   ) => void;
 }
