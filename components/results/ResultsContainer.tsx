@@ -26,6 +26,7 @@ interface ResultsContainerProps {
   dailyItinerary: DaySchedule[];
   routeInformation: RouteData;
   airbnbRecommendations: AirbnbListing[];
+  isAlreadySaved?: boolean;
 }
 
 export function ResultsContainer(props: ResultsContainerProps) {
@@ -86,25 +87,27 @@ export function ResultsContainer(props: ResultsContainerProps) {
         </p>
       </div>
 
-      {/* Save trip button */}
-      <div className="flex gap-3">
-        <Button
-          onClick={handleSaveTrip}
-          disabled={saveInProgress || saved}
-          size="lg"
-          className="gap-2"
-        >
-          {saveInProgress && <Loader2 className="w-4 h-4 animate-spin" />}
-          {saved && <CheckCircle className="w-4 h-4" />}
-          {saved ? "Trip Saved!" : "Save Trip"}
-        </Button>
+      {/* Save trip button - only show if not already saved */}
+      {!props.isAlreadySaved && (
+        <div className="flex gap-3">
+          <Button
+            onClick={handleSaveTrip}
+            disabled={saveInProgress || saved}
+            size="lg"
+            className="gap-2"
+          >
+            {saveInProgress && <Loader2 className="w-4 h-4 animate-spin" />}
+            {saved && <CheckCircle className="w-4 h-4" />}
+            {saved ? "Trip Saved!" : "Save Trip"}
+          </Button>
 
-        {saveError && (
-          <div className="flex-1 bg-red-50 border border-red-200 rounded px-4 py-2 flex items-center">
-            <p className="text-red-700 text-sm">{saveError}</p>
-          </div>
-        )}
-      </div>
+          {saveError && (
+            <div className="flex-1 bg-red-50 border border-red-200 rounded px-4 py-2 flex items-center">
+              <p className="text-red-700 text-sm">{saveError}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tabs for different sections */}
       <Tabs defaultValue="itinerary" className="space-y-4">

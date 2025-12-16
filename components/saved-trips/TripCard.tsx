@@ -78,7 +78,7 @@ export function TripCard({ trip, onDelete }: TripCardProps) {
               variant="outline"
               size="sm"
               onClick={() => {
-                window.location.href = `/protected/trips/${trip.id}`;
+                window.location.href = `/trips/${trip.id}`;
               }}
             >
               View

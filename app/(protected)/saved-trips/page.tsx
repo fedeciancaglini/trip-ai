@@ -6,7 +6,7 @@ export default function SavedTripsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">My trips</h1>
+        <h1 className="text-3xl font-bold">My Trips</h1>
         <Button asChild>
           <Link href="/">Plan new trip</Link>
         </Button>
