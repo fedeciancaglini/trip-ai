@@ -1,6 +1,6 @@
 /**
  * LangGraph Node: Transportation Mode Determination
- * Determines the best transportation mode (plane, bus, train, car, etc.)
+ * Determines the best transportation mode (plane or car)
  * based on distance between origin and destination
  */
 
@@ -36,11 +36,7 @@ function calculateDistance(
 const TransportationModeSchema = z.object({
   mode: z.enum([
     "plane",
-    "train",
-    "bus",
     "car",
-    "ferry",
-    "combination",
   ]),
   reasoning: z.string().describe("Brief explanation for the chosen mode"),
 });
@@ -85,13 +81,9 @@ export async function determineTransportationMode(
         - Cost and time efficiency
         - Availability of infrastructure (airports, train stations, highways)
 
-        Choose the most practical primary mode of transportation:
+        Choose the most practical primary mode of transportation (only choose between these two options):
         - plane: For long distances (> 1000 km typically, or when significantly faster)
-        - train: For medium to long distances with good rail infrastructure
-        - bus: For short to medium distances, budget-friendly option
-        - car: For short to medium distances with flexibility needs
-        - ferry: When crossing significant bodies of water
-        - combination: When multiple modes are typically needed (e.g., plane + car)
+        - car: For short to medium distances with flexibility needs, or when driving is more practical
 
         Provide a brief reasoning for your choice.
       `,
