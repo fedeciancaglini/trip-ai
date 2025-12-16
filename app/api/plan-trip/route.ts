@@ -46,6 +46,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const planRequest: PlanTripRequest = {
       destination: String(req.destination),
+      origin: req.origin ? String(req.origin) : undefined,
       startDate: String(req.startDate),
       endDate: String(req.endDate),
       budgetUsd: Number(req.budgetUsd),
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const state = await executeTripPlanner(
       {
         destination: planRequest.destination,
+        origin: planRequest.origin,
         startDate,
         endDate,
         budgetUsd: planRequest.budgetUsd,

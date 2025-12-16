@@ -18,6 +18,7 @@ import { Loader2, CheckCircle } from "lucide-react";
 
 interface ResultsContainerProps {
   destination: string;
+  origin?: string;
   startDate: string;
   endDate: string;
   budgetUsd: number;
@@ -39,6 +40,7 @@ export function ResultsContainer(props: ResultsContainerProps) {
     try {
       const payload: SaveTripRequest = {
         destination: props.destination,
+        origin: props.origin,
         startDate: props.startDate,
         endDate: props.endDate,
         budgetUsd: props.budgetUsd,

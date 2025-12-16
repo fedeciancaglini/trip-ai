@@ -75,6 +75,7 @@ export interface AirbnbListing {
 export const TripPlannerStateAnnotation = Annotation.Root({
   // Input
   destination: Annotation<string>(),
+  origin: Annotation<string | undefined>(),
   startDate: Annotation<Date>(),
   endDate: Annotation<Date>(),
   budgetUsd: Annotation<number>(),
@@ -114,6 +115,7 @@ export type TripPlannerState = typeof TripPlannerStateAnnotation.State;
 
 export interface TripFormInput {
   destination: string;
+  origin?: string;
   startDate: string; // ISO 8601
   endDate: string; // ISO 8601
   budgetUsd: number;
@@ -121,6 +123,7 @@ export interface TripFormInput {
 
 export interface TripFormState {
   destination: string;
+  origin: string;
   startDate: string;
   endDate: string;
   budgetUsd: number;
@@ -161,6 +164,7 @@ export interface SavedTrip {
   id: string;
   userId: string;
   destination: string;
+  origin?: string;
   startDate: string; // ISO 8601
   endDate: string; // ISO 8601
   budgetUsd: number;
@@ -177,6 +181,7 @@ export interface SupabaseTrip {
   id: string;
   user_id: string;
   destination: string;
+  origin?: string;
   start_date: string;
   end_date: string;
   budget_usd: number;
@@ -195,6 +200,7 @@ export interface SupabaseTrip {
 
 export interface PlanTripRequest {
   destination: string;
+  origin?: string;
   startDate: string;
   endDate: string;
   budgetUsd: number;
@@ -215,6 +221,7 @@ export interface PlanTripResponse {
 
 export interface SaveTripRequest {
   destination: string;
+  origin?: string;
   startDate: string;
   endDate: string;
   budgetUsd: number;

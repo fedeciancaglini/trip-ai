@@ -7,6 +7,7 @@ import type { POI, DaySchedule, RouteData, AirbnbListing } from "@/lib/types";
 
 interface FormInputs {
   destination: string;
+  origin?: string;
   startDate: string;
   endDate: string;
   budgetUsd: number;
@@ -50,6 +51,7 @@ export default function PlanPage() {
 
         <ResultsContainer
           destination={results.formInputs.destination}
+          origin={results.formInputs.origin}
           startDate={results.formInputs.startDate}
           endDate={results.formInputs.endDate}
           budgetUsd={results.formInputs.budgetUsd}

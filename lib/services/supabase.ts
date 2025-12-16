@@ -14,6 +14,7 @@ function convertSupabaseTripToCamelCase(trip: SupabaseTrip): SavedTrip {
     id: trip.id,
     userId: trip.user_id,
     destination: trip.destination,
+    origin: trip.origin,
     startDate: trip.start_date,
     endDate: trip.end_date,
     budgetUsd: trip.budget_usd,
@@ -37,6 +38,7 @@ function convertTripToSupabaseCase(
   return {
     user_id: userId,
     destination: trip.destination,
+    origin: trip.origin,
     start_date: trip.startDate,
     end_date: trip.endDate,
     budget_usd: trip.budgetUsd,

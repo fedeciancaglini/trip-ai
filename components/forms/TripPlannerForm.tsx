@@ -13,6 +13,7 @@ import type { PlanTripResponse } from "@/lib/types";
 
 interface TripFormState {
   destination: string;
+  origin: string;
   startDate: string;
   endDate: string;
   budgetUsd: number;
@@ -25,6 +26,7 @@ interface TripPlannerFormProps {
   onPlanTrip: (
     formInputs: {
       destination: string;
+      origin?: string;
       startDate: string;
       endDate: string;
       budgetUsd: number;
@@ -41,6 +43,7 @@ interface TripPlannerFormProps {
 export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
   const [state, setState] = useState<TripFormState>({
     destination: "",
+    origin: "",
     startDate: "",
     endDate: "",
     budgetUsd: 0,
@@ -99,6 +102,7 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           destination: state.destination,
+          origin: state.origin || undefined,
           startDate: state.startDate,
           endDate: state.endDate,
           budgetUsd: Number(state.budgetUsd),
@@ -120,6 +124,7 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
         onPlanTrip(
           {
             destination: state.destination,
+            origin: state.origin || undefined,
             startDate: state.startDate,
             endDate: state.endDate,
             budgetUsd: state.budgetUsd,
@@ -164,6 +169,26 @@ export function TripPlannerForm({ onPlanTrip }: TripPlannerFormProps) {
           {state.errors.destination && (
             <p className="text-red-500 text-sm mt-1">{state.errors.destination}</p>
           )}
+        </div>
+
+        {/* Origin */}
+        <div>
+          <label htmlFor="origin" className="block text-sm font-medium mb-2">
+            Origin (optional)
+          </label>
+          <Input
+            id="origin"
+            type="text"
+            placeholder="e.g., New York, USA"
+            value={state.origin}
+            onChange={(e) =>
+              setState((prev) => ({
+                ...prev,
+                origin: e.target.value,
+              }))
+            }
+            disabled={state.loading}
+          />
         </div>
 
         {/* Start Date */}
