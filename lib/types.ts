@@ -3,6 +3,8 @@
  * Core interfaces used throughout the application
  */
 
+import { Annotation } from "@langchain/langgraph";
+
 // ============================================================================
 // API & External Service Types
 // ============================================================================
@@ -69,27 +71,42 @@ export interface AirbnbListing {
 // LangGraph Agent Types
 // ============================================================================
 
-export interface TripPlannerState {
+// Define LangGraph Annotation for state (single source of truth)
+export const TripPlannerStateAnnotation = Annotation.Root({
   // Input
-  destination: string;
-  startDate: Date;
-  endDate: Date;
-  budgetUsd: number;
-  daysCount: number;
-
+  destination: Annotation<string>(),
+  startDate: Annotation<Date>(),
+  endDate: Annotation<Date>(),
+  budgetUsd: Annotation<number>(),
+  daysCount: Annotation<number>(),
   // Processing
-  pointsOfInterest: POI[];
-  dailyItinerary: DaySchedule[];
-  routeInformation: RouteData;
-
+  pointsOfInterest: Annotation<POI[]>({
+    reducer: (x, y) => y ?? x ?? [],
+    default: () => [],
+  }),
+  dailyItinerary: Annotation<DaySchedule[]>({
+    reducer: (x, y) => y ?? x ?? [],
+    default: () => [],
+  }),
+  routeInformation: Annotation<RouteData>({
+    reducer: (x, y) => y ?? x,
+  }),
   // Output
-  airbnbRecommendations: AirbnbListing[];
-
+  airbnbRecommendations: Annotation<AirbnbListing[]>({
+    reducer: (x, y) => y ?? x ?? [],
+    default: () => [],
+  }),
   // Metadata
-  errors: string[];
-  startTime: Date;
-  endTime?: Date;
-}
+  errors: Annotation<string[]>({
+    reducer: (x, y) => x.concat(y ?? []),
+    default: () => [],
+  }),
+  startTime: Annotation<Date>(),
+  endTime: Annotation<Date | undefined>(),
+});
+
+// Derive the TypeScript type from the Annotation (single source of truth)
+export type TripPlannerState = typeof TripPlannerStateAnnotation.State;
 
 // ============================================================================
 // Form & UI Types

@@ -4,46 +4,37 @@
  */
 
 import { StateGraph, START, END } from "@langchain/langgraph";
-import type { TripPlannerState } from "./types";
+import { TripPlannerStateAnnotation, type TripPlannerState } from "./types";
 import { validateInput } from "./nodes/input-validation";
 import { discoverInterestPoints } from "./nodes/interest-points";
 import { planRoutes } from "./nodes/route-planning";
 import { searchAccommodation } from "./nodes/accommodation";
+
+// Trip planner node names
+const TripPlannerNodeNames = {
+  validateInput: "validate_input",
+  discoverPois: "discover_pois",
+  planRoutes: "plan_routes",
+  searchAccommodation: "search_accommodation",
+} as const;
 
 /**
  * Create and compile the trip planner graph
  * This is done once at startup and reused for multiple invocations
  */
 function createTripPlannerGraph() {
-  const workflow = new StateGraph<TripPlannerState>({
-    channels: {
-      destination: { value: (x?: string) => x || "" },
-      startDate: { value: (x?: Date) => x || new Date() },
-      endDate: { value: (x?: Date) => x || new Date() },
-      budgetUsd: { value: (x?: number) => x || 0 },
-      daysCount: { value: (x?: number) => x || 1 },
-      pointsOfInterest: { value: (x?) => x || [] },
-      dailyItinerary: { value: (x?) => x || [] },
-      routeInformation: { value: (x?) => x || { totalDistance: "", totalDuration: "", routes: [] } },
-      airbnbRecommendations: { value: (x?) => x || [] },
-      errors: { value: (x?: string[]) => x || [] },
-      startTime: { value: (x?: Date) => x || new Date() },
-      endTime: { value: (x?: Date) => x },
-    },
-  });
-
-  // Add nodes
-  workflow.addNode("validate_input", validateInput);
-  workflow.addNode("discover_pois", discoverInterestPoints);
-  workflow.addNode("plan_routes", planRoutes);
-  workflow.addNode("search_accommodation", searchAccommodation);
-
-  // Add edges for sequential execution
-  workflow.addEdge(START, "validate_input");
-  workflow.addEdge("validate_input", "discover_pois");
-  workflow.addEdge("discover_pois", "plan_routes");
-  workflow.addEdge("plan_routes", "search_accommodation");
-  workflow.addEdge("search_accommodation", END);
+  const workflow = new StateGraph(TripPlannerStateAnnotation)
+    // Add nodes
+    .addNode(TripPlannerNodeNames.validateInput, validateInput)
+    .addNode(TripPlannerNodeNames.discoverPois, discoverInterestPoints)
+    .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
+    .addNode(TripPlannerNodeNames.searchAccommodation, searchAccommodation)
+    // Add edges for sequential execution
+    .addEdge(START, TripPlannerNodeNames.validateInput)
+    .addEdge(TripPlannerNodeNames.validateInput, TripPlannerNodeNames.discoverPois)
+    .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
+    .addEdge(TripPlannerNodeNames.planRoutes, TripPlannerNodeNames.searchAccommodation)
+    .addEdge(TripPlannerNodeNames.searchAccommodation, END);
 
   return workflow.compile();
 }
@@ -74,6 +65,7 @@ export async function executeTripPlanner(
     ...input,
     errors: [],
     startTime: new Date(),
+    endTime: undefined,
   };
 
   // Use timeout if specified
