@@ -27,13 +27,14 @@ function createTripPlannerGraph() {
     // Add nodes
     .addNode(TripPlannerNodeNames.validateInput, validateInput)
     .addNode(TripPlannerNodeNames.discoverPois, discoverInterestPoints)
-    .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
+    // .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
     .addNode(TripPlannerNodeNames.searchAccommodation, searchAccommodation)
     // Add edges for sequential execution
     .addEdge(START, TripPlannerNodeNames.validateInput)
     .addEdge(TripPlannerNodeNames.validateInput, TripPlannerNodeNames.discoverPois)
-    .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
-    .addEdge(TripPlannerNodeNames.planRoutes, TripPlannerNodeNames.searchAccommodation)
+    .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.searchAccommodation)
+    // .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
+    // .addEdge(TripPlannerNodeNames.planRoutes, TripPlannerNodeNames.searchAccommodation)
     .addEdge(TripPlannerNodeNames.searchAccommodation, END);
 
   return workflow.compile();
