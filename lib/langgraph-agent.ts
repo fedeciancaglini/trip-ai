@@ -6,6 +6,7 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { TripPlannerStateAnnotation, type TripPlannerState } from "./types";
 import { validateInput } from "./nodes/input-validation";
+import { geocodeLocations } from "./nodes/geocoding";
 import { discoverInterestPoints } from "./nodes/interest-points";
 import { planRoutes } from "./nodes/route-planning";
 import { searchAccommodation } from "./nodes/accommodation";
@@ -13,6 +14,7 @@ import { searchAccommodation } from "./nodes/accommodation";
 // Trip planner node names
 const TripPlannerNodeNames = {
   validateInput: "validate_input",
+  geocodeLocations: "geocode_locations",
   discoverPois: "discover_pois",
   planRoutes: "plan_routes",
   searchAccommodation: "search_accommodation",
@@ -26,12 +28,14 @@ function createTripPlannerGraph() {
   const workflow = new StateGraph(TripPlannerStateAnnotation)
     // Add nodes
     .addNode(TripPlannerNodeNames.validateInput, validateInput)
+    .addNode(TripPlannerNodeNames.geocodeLocations, geocodeLocations)
     .addNode(TripPlannerNodeNames.discoverPois, discoverInterestPoints)
     // .addNode(TripPlannerNodeNames.planRoutes, planRoutes)
     .addNode(TripPlannerNodeNames.searchAccommodation, searchAccommodation)
     // Add edges for sequential execution
     .addEdge(START, TripPlannerNodeNames.validateInput)
-    .addEdge(TripPlannerNodeNames.validateInput, TripPlannerNodeNames.discoverPois)
+    .addEdge(TripPlannerNodeNames.validateInput, TripPlannerNodeNames.geocodeLocations)
+    .addEdge(TripPlannerNodeNames.geocodeLocations, TripPlannerNodeNames.discoverPois)
     .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.searchAccommodation)
     // .addEdge(TripPlannerNodeNames.discoverPois, TripPlannerNodeNames.planRoutes)
     // .addEdge(TripPlannerNodeNames.planRoutes, TripPlannerNodeNames.searchAccommodation)

@@ -184,6 +184,85 @@ export async function planDailyRoutes(
 }
 
 /**
+ * Geocode an address to coordinates using MCP
+ * @param address - Address string to geocode
+ * @returns Coordinates object with lat and lng
+ */
+export async function geocodeAddress(
+  address: string
+): Promise<{ lat: number; lng: number }> {
+  try {
+    const client = await initializeGoogleMapsClient();
+
+    // Use maps_geocode tool
+    const result = await client.callTool({
+      name: "maps_geocode",
+      arguments: {
+        address: address,
+      },
+    });
+
+    if (!result.content || !Array.isArray(result.content)) {
+      throw new Error("Invalid response from Google Maps MCP: no content");
+    }
+
+    // Parse the response
+    for (const content of result.content) {
+      if (content.type !== "text") continue;
+
+      try {
+        const parsed = JSON.parse(content.text);
+
+        let lat: number;
+        let lng: number;
+
+        if (parsed.location && parsed.location.lat && parsed.location.lng) {
+          lat = parsed.location.lat;
+          lng = parsed.location.lng;
+        } else {
+          throw new Error(
+            "Could not parse coordinates from geocoding response"
+          );
+        }
+
+        // Validate coordinates
+        if (
+          typeof lat !== "number" ||
+          typeof lng !== "number" ||
+          isNaN(lat) ||
+          isNaN(lng)
+        ) {
+          throw new Error("Invalid coordinates in geocoding response");
+        }
+
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          throw new Error("Coordinates out of valid range");
+        }
+
+        return { lat, lng };
+      } catch (parseError) {
+        // If not JSON, try to extract from text
+        console.error(
+          "Failed to parse Google Maps MCP geocoding response:",
+          parseError
+        );
+        continue;
+      }
+    }
+
+    throw new Error("Could not parse coordinates from MCP geocoding response");
+  } catch (error) {
+    if (error instanceof GoogleMapsError) {
+      throw error;
+    }
+    if (error instanceof Error) {
+      throw new GoogleMapsError(`Geocoding failed: ${error.message}`);
+    }
+    throw new GoogleMapsError("Geocoding failed: Unknown error");
+  }
+}
+
+/**
  * Get route information between two points using MCP
  */
 async function getRoute(

@@ -80,6 +80,13 @@ export const TripPlannerStateAnnotation = Annotation.Root({
   endDate: Annotation<Date>(),
   budgetUsd: Annotation<number>(),
   daysCount: Annotation<number>(),
+  // Geocoded coordinates
+  destinationCoordinates: Annotation<{ lat: number; lng: number } | undefined>({
+    reducer: (x, y) => y ?? x,
+  }),
+  originCoordinates: Annotation<{ lat: number; lng: number } | undefined>({
+    reducer: (x, y) => y ?? x,
+  }),
   // Processing
   pointsOfInterest: Annotation<POI[]>({
     reducer: (x, y) => y ?? x ?? [],
